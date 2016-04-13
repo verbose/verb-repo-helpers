@@ -13,7 +13,21 @@ $ npm install verb-repo-helpers --save
 ## Usage
 
 ```js
+var verb = require('verb');
 var helpers = require('verb-repo-helpers');
+
+var app = verb();
+app.use(helpers);
+```
+
+## Generator usage
+
+In your verb generator:
+
+```js
+module.exports = function(app) {
+  app.use(require('verb-repo-helpers'));
+};
 ```
 
 ## Related projects
