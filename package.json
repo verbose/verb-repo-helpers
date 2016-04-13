@@ -1,7 +1,7 @@
 {
   "name": "verb-repo-helpers",
   "description": "Commonly used helpers for adding repository-related data to templates in verb projects.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/verbose/verb-repo-helpers",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "verbose/verb-repo-helpers",
@@ -42,7 +42,7 @@
     "gulp-istanbul": "^0.10.4",
     "gulp-mocha": "^2.2.0",
     "gulp-unused": "^0.1.2",
-    "mocha": "*",
+    "mocha": "^2.4.5",
     "templates": "^0.16.1"
   },
   "keywords": [
