@@ -96,7 +96,7 @@ module.exports = function plugin(app) {
 
   app.helper('apidocs', function() {
     var fn = utils.apidocs(this.options);
-    return fn.apply(this, arguments);
+    return fn.apply(null, arguments);
   });
 
   app.helper('copyright', function() {
