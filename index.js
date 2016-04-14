@@ -22,9 +22,20 @@ module.exports = function plugin(app) {
    * async helpers
    */
 
-  app.asyncHelper('related', utils.related(app.options));
-  app.asyncHelper('reflinks', utils.reflinks(app.options));
-  app.asyncHelper('githubContributors', utils.contributors);
+  app.asyncHelper('related', function() {
+    var fn = utils.related(this.options);
+    return fn.apply(this, arguments);
+  });
+
+  app.asyncHelper('reflinks', function() {
+    var fn = utils.reflinks(this.options);
+    return fn.apply(this, arguments);
+  });
+
+  app.asyncHelper('githubContributors', function() {
+    return utils.contributors.apply(this, arguments);
+  });
+
   app.asyncHelper('pkg', function fn(name, prop, cb) {
     if (typeof prop === 'function') {
       cb = prop;
@@ -79,9 +90,20 @@ module.exports = function plugin(app) {
   });
 
   // date helper
-  app.helper('date', utils.date);
-  app.helper('apidocs', utils.apidocs());
-  app.helper('copyright', utils.copyright({linkify: true}));
+  app.helper('date', function() {
+    return utils.date.apply(this, arguments);
+  });
+
+  app.helper('apidocs', function() {
+    var fn = utils.apidocs(this.options);
+    return fn.apply(this, arguments);
+  });
+
+  app.helper('copyright', function() {
+    var fn = utils.copyright({linkify: true});
+    return fn.apply(this, arguments);
+  });
+
   app.helper('results', function(val) {
     var fn = require(utils.resolve.sync(app.cwd));
     var lines = util.inspect(fn(val)).split('\n');
@@ -93,7 +115,7 @@ module.exports = function plugin(app) {
   app.helper('previous', function(increment, v) {
     var segs = String(v).split('.');
     var version = '';
-    switch(increment) {
+    switch (increment) {
       case 'major':
         version = (segs[0] - 1) + '.0.0';
         break;
