@@ -18,23 +18,105 @@ module.exports = function plugin(app) {
   if (this.isRegistered('verb-repo-helpers')) return;
   debug('initializing <%s>, called by <%s>', __filename, module.parent.id);
 
+  app.asyncHelper('section', function(name, options, cb) {
+    if (options === 'function') {
+      cb = options;
+      options = {};
+    }
+    var view = app.includes.getView(name);
+    if (typeof view === 'undefined') {
+      cb(null, '');
+      return;
+    }
+    app.render(view, function(err, res) {
+      if (err) return cb(err);
+      cb(null, res.content);
+    });
+  });
+
+  app.asyncHelper('block', function(name, options, cb) {
+    app.include(name, options.fn(this));
+    cb(null, '');
+  });
+
   /**
    * async helpers
    */
 
   app.asyncHelper('related', function() {
-    var fn = utils.related(this.options);
-    return fn.apply(this, arguments);
+    return utils.related(this.options).apply(this, arguments);
   });
 
   app.asyncHelper('reflinks', function() {
-    var fn = utils.reflinks(this.options);
-    return fn.apply(this, arguments);
+    return utils.reflinks(this.options).apply(this, arguments);
   });
 
-  app.asyncHelper('githubContributors', function() {
-    return utils.contributors.apply(this, arguments);
+  /**
+   * Add a github contributors list from GitHub's API
+   */
+
+  app.helperGroup('gh', {
+    contributors: function(repo, options, cb) {
+      if (typeof repo === 'function') {
+        cb = repo;
+        options = {};
+        repo = null;
+      }
+      if (typeof options === 'function') {
+        cb = options;
+        options = {};
+      }
+      if (typeof repo !== 'string') {
+        options = repo;
+        repo = null;
+      }
+      options = options || this.options;
+      repo = repo || this.context.repository;
+      return utils.contributors(repo, options, cb);
+    }
+  }, true);
+
+  /**
+   * Create a GitHub issue linke
+   */
+
+  app.helper('issue', function(options) {
+    var opts = utils.merge({}, this.context, options);
+    opts.owner = opts.owner || opts.author && opts.author.username;
+    opts.repo = opts.name;
+    return utils.issue(opts);
   });
+
+  /**
+   * Return `val` if a file or one of the given `files` exists on the file system.
+   */
+
+  app.asyncHelper('ifExists', function(files, val, cb) {
+    if (utils.exists(files, app.cwd)) {
+      cb(null, val);
+    } else {
+      cb(null, '');
+    }
+  });
+
+  app.asyncHelper('maybeInclude', function maybe(name, helperName, cb) {
+    if (typeof helperName === 'function') {
+      cb = helperName;
+      helperName = 'include';
+    }
+
+    var opts = utils.merge({}, this.options, this.context);
+    if (opts[name]) {
+      var fn = app.getAsyncHelper(helperName);
+      return fn.apply(this, arguments);
+    } else {
+      cb(null, '');
+    }
+  });
+
+  /**
+   * Get a package.json from npm's API
+   */
 
   app.asyncHelper('pkg', function fn(name, prop, cb) {
     if (typeof prop === 'function') {
@@ -58,21 +140,6 @@ module.exports = function plugin(app) {
 
   app.asyncHelper('read', function(fp, cb) {
     fs.readFile(fp, 'utf8', cb);
-  });
-
-  app.asyncHelper('maybeInclude', function(name, helperName, cb) {
-    if (typeof helperName === 'function') {
-      cb = helperName;
-      helperName = 'include';
-    }
-
-    var opts = utils.merge({}, this.options, this.context);
-    if (opts[name]) {
-      var fn = app.getAsyncHelper(helperName);
-      return fn.apply(this, arguments);
-    } else {
-      cb(null, '');
-    }
   });
 
   /**
@@ -104,6 +171,10 @@ module.exports = function plugin(app) {
     return fn.apply(this, arguments);
   });
 
+  /**
+   * Display a commented line of code
+   */
+
   app.helper('results', function(val) {
     var fn = require(utils.resolve.sync(app.cwd));
     var lines = util.inspect(fn(val)).split('\n');
@@ -126,13 +197,6 @@ module.exports = function plugin(app) {
       }
     }
     return version;
-  });
-
-  app.helper('issue', function(options) {
-    var opts = utils.merge({}, this.context, options);
-    opts.owner = opts.owner || opts.author && opts.author.username;
-    opts.repo = opts.name;
-    return utils.issue(opts);
   });
 
   debug('helpers finished');
