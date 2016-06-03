@@ -1,0 +1,1 @@
+{%= contributors(repository, {format: 'table'}) %}
