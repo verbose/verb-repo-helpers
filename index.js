@@ -18,17 +18,23 @@ module.exports = function plugin(app) {
   if (this.isRegistered('verb-repo-helpers')) return;
   debug('initializing <%s>, called by <%s>', __filename, module.parent.id);
 
-  app.asyncHelper('section', function(name, options, cb) {
-    if (options === 'function') {
-      cb = options;
-      options = {};
+  app.asyncHelper('section', function(name, locals, cb) {
+    if (typeof locals === 'function') {
+      cb = locals;
+      locals = {};
     }
     var view = app.includes.getView(name);
+    var fallback = '';
+
+    if (typeof locals === 'string') {
+      fallback = locals;
+    }
+
     if (typeof view === 'undefined') {
-      cb(null, '');
+      cb(null, fallback);
       return;
     }
-    app.render(view, function(err, res) {
+    app.render(view, locals, function(err, res) {
       if (err) return cb(err);
       cb(null, res.content);
     });
