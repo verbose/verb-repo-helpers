@@ -10,13 +10,16 @@
 var fs = require('fs');
 var util = require('util');
 var path = require('path');
-var debug = require('debug')('base:verb:readme-generator');
+var debug = require('debug')('verb:generator:repo-helpers');
 var utils = require('./utils');
 
 module.exports = function plugin(app) {
-  if (!this.isApp) return;
-  if (this.isRegistered('verb-repo-helpers')) return;
+  if (!utils.isValid(app, 'verb-repo-helpers')) return;
   debug('initializing <%s>, called by <%s>', __filename, module.parent.id);
+
+  app.helper('relative', function(dest) {
+    return (dest !== this.app.cwd) ? path.relative(dest, this.app.cwd) : './';
+  });
 
   app.asyncHelper('section', function(name, locals, cb) {
     if (typeof locals === 'function') {
@@ -95,9 +98,18 @@ module.exports = function plugin(app) {
 
   /**
    * Return `val` if a file or one of the given `files` exists on the file system.
+   *
+   * ```html
+   * <%= ifExists(['foo.js', 'bar.js'], doSomething) %>
+   * ```
+   * @param {String|Array} `files`
+   * @param {any} `val` The value to return if one of the given `files` exists
+   * @param {Function} `cb` Callback
+   * @api public
    */
 
   app.asyncHelper('ifExists', function(files, val, cb) {
+    debug('ifExists helper', files, val);
     if (utils.exists(files, app.cwd)) {
       cb(null, val);
     } else {
@@ -105,7 +117,20 @@ module.exports = function plugin(app) {
     }
   });
 
-  app.asyncHelper('maybeInclude', function maybe(name, helperName, cb) {
+  /**
+   * Include template `name`
+   *
+   * ```html
+   * <%= maybeInclude('foo', doSomething) %>
+   * ```
+   * @param {String|Array} `files`
+   * @param {any} `val` The value to return if one of the given `files` exists
+   * @param {Function} `cb` Callback
+   * @api public
+   */
+
+  app.asyncHelper('maybeInclude', function(name, helperName, cb) {
+    debug('maybeInclude helper', name);
     if (typeof helperName === 'function') {
       cb = helperName;
       helperName = 'include';
@@ -125,6 +150,7 @@ module.exports = function plugin(app) {
    */
 
   app.asyncHelper('pkg', function fn(name, prop, cb) {
+    debug('pkg helper: %s, <%s>', name, prop);
     if (typeof prop === 'function') {
       cb = prop;
       prop = null;
@@ -145,6 +171,7 @@ module.exports = function plugin(app) {
   });
 
   app.asyncHelper('read', function(fp, cb) {
+    debug('read helper', fp);
     fs.readFile(fp, 'utf8', cb);
   });
 
@@ -153,6 +180,7 @@ module.exports = function plugin(app) {
    */
 
   app.helper('require', function(name) {
+    debug('require helper', name);
     try {
       return require(name);
     } catch (err) {}
@@ -164,15 +192,18 @@ module.exports = function plugin(app) {
 
   // date helper
   app.helper('date', function() {
+    debug('date helper');
     return utils.date.apply(this, arguments);
   });
 
   app.helper('apidocs', function() {
+    debug('apidocs helper');
     var fn = utils.apidocs(this.options);
     return fn.apply(null, arguments);
   });
 
   app.helper('copyright', function() {
+    debug('copyright helper');
     var fn = utils.copyright({linkify: true});
     return fn.apply(this, arguments);
   });
@@ -182,6 +213,7 @@ module.exports = function plugin(app) {
    */
 
   app.helper('results', function(val) {
+    debug('results helper', val);
     var fn = require(utils.resolve.sync(app.cwd));
     var lines = util.inspect(fn(val)).split('\n');
     return lines.map(function(line) {

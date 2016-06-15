@@ -19,6 +19,7 @@ require('helper-date', 'date');
 require('helper-issue', 'issue');
 require('helper-reflinks', 'reflinks');
 require('helper-related', 'related');
+require('is-valid-app', 'isValid');
 require('mixin-deep', 'merge');
 require = fn;
 
