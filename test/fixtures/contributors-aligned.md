@@ -1,1 +1,1 @@
-{%= gh.contributors(repository, {format: 'aligned'}) %}
+<%= gh.contributors(repository, {format: 'aligned', singleContributor: true}) %>

@@ -1,1 +1,1 @@
-{%= contributors(repository, {format: 'table'}) %}
+<%= gh.contributors({format: 'table', singleContributor: true}) %>

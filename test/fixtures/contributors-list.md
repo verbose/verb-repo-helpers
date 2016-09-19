@@ -1,1 +1,1 @@
-<%= gh.contributors({format: "list"}) %>
+<%= gh.contributors({format: "list", singleContributor: true}) %>

@@ -61,7 +61,7 @@ module.exports = function plugin(app) {
   });
 
   /**
-   * Add a github contributors list from GitHub's API
+   * GitHub helpers, namespaces on the `gh` object
    */
 
   app.helperGroup('gh', {
@@ -79,9 +79,20 @@ module.exports = function plugin(app) {
         options = repo;
         repo = null;
       }
-      options = options || this.options;
+
+      options = utils.merge({}, options || this.options);
+      var format = options.format || 'table';
+      options.format = 'noop';
+
       repo = repo || this.context.repository;
-      return utils.contributors(repo, options, cb);
+      utils.contributors(repo, options, function(err, people) {
+        if (err) return cb(err);
+        if (people.length === 1 && options.singleContributor !== true) {
+          cb(null, '');
+        }
+        var opts = utils.merge({}, options, {format: format});
+        cb(null, utils.formatPeople(people, opts));
+      });
     }
   }, true);
 

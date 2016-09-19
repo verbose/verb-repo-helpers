@@ -9,6 +9,7 @@ require = utils;
  * Lazily required module dependencies
  */
 
+require('format-people');
 require('fs-exists-sync', 'existsSync');
 require('get-pkg', 'getPkg');
 require('get-value', 'get');
