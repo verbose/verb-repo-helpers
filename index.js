@@ -1,8 +1,8 @@
 /*!
- * verb-repo-helpers (https://github.com/verbose/verb-repo-helpers)
+ * verb-repo-helpers <https://github.com/verbose/verb-repo-helpers>
  *
- * Copyright (c) 2016, Jon Schlinkert.
- * Licensed under the MIT License.
+ * Copyright (c) 2016-2017, Jon Schlinkert.
+ * Released under the MIT License.
  */
 
 'use strict';
@@ -69,7 +69,7 @@ module.exports = function plugin(app) {
       if (typeof repo === 'function') {
         cb = repo;
         options = {};
-        repo = null;
+        repo = '';
       }
       if (typeof options === 'function') {
         cb = options;
@@ -77,10 +77,12 @@ module.exports = function plugin(app) {
       }
       if (typeof repo !== 'string') {
         options = repo;
-        repo = null;
+        repo = '';
+      }
+      if (typeof options !== 'object') {
+        options = {};
       }
 
-      options = utils.merge({}, options || this.options);
       var format = options.format || 'table';
       options.format = 'noop';
 

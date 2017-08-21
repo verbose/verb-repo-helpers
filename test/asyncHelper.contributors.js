@@ -26,6 +26,17 @@ describe('asyncHelper.contributors', function() {
     app.data(require('../package'));
   });
 
+  it('should add contributors using defaults', function(cb) {
+    addTemplate(app, 'contributors-defaults.md');
+    app.render('contributors-defaults.md', function(err, res) {
+      if (err) return cb(err);
+      assert(/\*\*Commits\*\*/.test(res.contents.toString()));
+      assert(/\*\*Contributor\*\*/.test(res.contents.toString()));
+      assert(/\[\w+\]\(.*?\)/.test(res.content));
+      cb();
+    });
+  });
+
   it('should add contributors list', function(cb) {
     addTemplate(app, 'contributors-list.md');
     app.render('contributors-list.md', function(err, res) {
