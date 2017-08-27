@@ -69,7 +69,7 @@ module.exports = function plugin(app) {
       if (typeof repo === 'function') {
         cb = repo;
         options = {};
-        repo = '';
+        repo = null;
       }
       if (typeof options === 'function') {
         cb = options;
@@ -77,18 +77,29 @@ module.exports = function plugin(app) {
       }
       if (typeof repo !== 'string') {
         options = repo;
-        repo = '';
-      }
-      if (typeof options !== 'object') {
-        options = {};
+        repo = null;
       }
 
+      var opt = Object.assign({}, this.options);
+      delete opt.lookup;
+
+      options = utils.merge({}, options || opt);
       var format = options.format || 'table';
       options.format = 'noop';
 
       repo = repo || this.context.repository;
+      if (!repo) {
+        cb();
+        return;
+      }
+
       utils.contributors(repo, options, function(err, people) {
         if (err) return cb(err);
+        if (people.length === 0) {
+          cb(null);
+          return;
+        }
+
         if (people.length === 1 && options.singleContributor !== true) {
           cb(null, '');
         }
