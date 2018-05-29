@@ -24,7 +24,7 @@
     "debug": "^2.2.0",
     "format-people": "^0.1.1",
     "fs-exists-sync": "^0.1.0",
-    "get-pkg": "^0.3.0",
+    "get-pkg": "^1.0.0",
     "get-value": "^2.0.6",
     "github-contributors": "^0.4.0",
     "helper-apidocs": "^0.5.1",
