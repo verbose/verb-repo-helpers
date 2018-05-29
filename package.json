@@ -1,7 +1,7 @@
 {
   "name": "verb-repo-helpers",
   "description": "Commonly used helpers for adding repository-related data to templates in verb projects.",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "homepage": "https://github.com/verbose/verb-repo-helpers",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "verbose/verb-repo-helpers",
