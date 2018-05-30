@@ -1,49 +1,37 @@
 'use strict';
 
-var path = require('path');
-var utils = require('lazy-cache')(require);
-var fn = require;
-require = utils;
+const fs = require('fs');
+const path = require('path');
+
+function define(obj, key, fn) {
+  Object.defineProperty(obj, key, { get: fn });
+}
 
 /**
- * Lazily required module dependencies
+ * Lazily require module dependencies in a way that is
+ * friendly to both node.js and web/browserify/webpack.
  */
 
-require('format-people');
-require('fs-exists-sync', 'existsSync');
-require('get-pkg', 'getPkg');
-require('get-value', 'get');
-require('github-contributors', 'contributors');
-require('helper-apidocs', 'apidocs');
-require('helper-copyright', 'copyright');
-require('helper-date', 'date');
-require('helper-issue', 'issue');
-require('helper-reflinks', 'reflinks');
-require('helper-related', 'related');
-require('is-valid-app', 'isValid');
-require('mixin-deep', 'merge');
-require = fn;
+define(exports, 'formatPeople', () => require('format-people'));
+define(exports, 'apidocs', () => require('helper-apidocs'));
+define(exports, 'contributors', () => require('github-contributors'));
+define(exports, 'copyright', () => require('helper-copyright'));
+define(exports, 'date', () => require('helper-date'));
+define(exports, 'get', () => require('get-value'));
+define(exports, 'getPkg', () => require('get-pkg'));
+define(exports, 'issue', () => require('helper-issue'));
+define(exports, 'isValid', () => require('is-valid-app'));
+define(exports, 'merge', () => require('mixin-deep'));
+define(exports, 'reflinks', () => require('helper-reflinks'));
+define(exports, 'related', () => require('helper-related'));
 
-utils.exists = function(files, cwd) {
-  files = utils.arrayify(files);
-  var len = files.length;
-  var idx = -1;
-  while (++idx < len) {
-    var file = files[idx];
+exports.anyExists = function(files, cwd) {
+  for (let file of [].concat(files || [])) {
     if (cwd) file = path.resolve(cwd, file);
-    if (utils.existsSync(file)) {
+    if (fs.existsSync(file)) {
       return true;
     }
   }
   return false;
 };
 
-utils.arrayify = function(val) {
-  return val ? (Array.isArray(val) ? val : [val]) : [];
-};
-
-/**
- * Expose `utils` modules
- */
-
-module.exports = utils;

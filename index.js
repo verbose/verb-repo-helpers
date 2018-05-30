@@ -1,21 +1,12 @@
-/*!
- * verb-repo-helpers <https://github.com/verbose/verb-repo-helpers>
- *
- * Copyright (c) 2016-2017, Jon Schlinkert.
- * Released under the MIT License.
- */
-
 'use strict';
 
-var fs = require('fs');
-var util = require('util');
-var path = require('path');
-var debug = require('debug')('verb:generator:repo-helpers');
-var utils = require('./utils');
+const fs = require('fs');
+const util = require('util');
+const path = require('path');
+const utils = require('./utils');
 
 module.exports = function plugin(app) {
   if (!utils.isValid(app, 'verb-repo-helpers')) return;
-  debug('initializing <%s>, called by <%s>', __filename, module.parent.id);
 
   app.helper('relative', function(dest) {
     return (dest !== this.app.cwd) ? path.relative(dest, this.app.cwd) : './';
@@ -26,19 +17,24 @@ module.exports = function plugin(app) {
       cb = locals;
       locals = {};
     }
-    var view = app.includes.getView(name);
-    var fallback = '';
+
+    const view = app.includes.getView(name);
+    let fallback = '';
 
     if (typeof locals === 'string') {
       fallback = locals;
     }
 
-    if (typeof view === 'undefined') {
+    if (view === void 42) {
       cb(null, fallback);
       return;
     }
+
     app.render(view, locals, function(err, res) {
-      if (err) return cb(err);
+      if (err) {
+        cb(err);
+        return;
+      }
       cb(null, res.content);
     });
   });
@@ -52,12 +48,12 @@ module.exports = function plugin(app) {
    * async helpers
    */
 
-  app.asyncHelper('related', function() {
-    return utils.related(this.options).apply(this, arguments);
+  app.asyncHelper('related', function(...args) {
+    return utils.related(this.options).call(this, ...args);
   });
 
-  app.asyncHelper('reflinks', function() {
-    return utils.reflinks(this.options).apply(this, arguments);
+  app.asyncHelper('reflinks', function(...args) {
+    return utils.reflinks(this.options).call(this, ...args);
   });
 
   /**
@@ -65,27 +61,23 @@ module.exports = function plugin(app) {
    */
 
   app.helperGroup('gh', {
-    contributors: function(repo, options, cb) {
+    contributors: function contribs(repo, options, cb) {
       if (typeof repo === 'function') {
-        cb = repo;
-        options = {};
-        repo = null;
+        return contribs.call(this, null, {}, repo);
       }
       if (typeof options === 'function') {
-        cb = options;
-        options = {};
+        return contribs.call(this, repo, {}, options);
       }
       if (typeof repo !== 'string') {
         options = repo;
         repo = null;
       }
 
-      var opt = Object.assign({}, this.options);
-      delete opt.lookup;
+      const opts  = Object.assign({ format: 'table' }, this.options, options);
+      const format = opts.format;
+      opts.format = 'noop';
 
-      options = utils.merge({}, options || opt);
-      var format = options.format || 'table';
-      options.format = 'noop';
+      delete opts.lookup;
 
       repo = repo || this.context.repository;
       if (!repo) {
@@ -93,17 +85,23 @@ module.exports = function plugin(app) {
         return;
       }
 
-      utils.contributors(repo, options, function(err, people) {
-        if (err) return cb(err);
+      utils.contributors(repo, opts, function(err, people) {
+        if (err) {
+          cb(err);
+          return;
+        }
+
         if (people.length === 0) {
           cb(null);
           return;
         }
 
-        if (people.length === 1 && options.singleContributor !== true) {
+        if (people.length === 1 && opts.singleContributor !== true) {
           cb(null, '');
+          return;
         }
-        var opts = utils.merge({}, options, {format: format});
+
+        opts.format = format;
         cb(null, utils.formatPeople(people, opts));
       });
     }
@@ -114,10 +112,10 @@ module.exports = function plugin(app) {
    */
 
   app.helper('issue', function(options) {
-    var opts = utils.merge({}, this.context, options);
-    opts.owner = opts.owner || opts.author && opts.author.username;
-    opts.repo = opts.name;
-    return utils.issue(opts);
+    const ctx = utils.merge({}, this.context, options);
+    ctx.owner = ctx.owner || (ctx.author ? ctx.author.username : '');
+    ctx.repo = ctx.name;
+    return utils.issue(ctx);
   });
 
   /**
@@ -133,12 +131,7 @@ module.exports = function plugin(app) {
    */
 
   app.asyncHelper('ifExists', function(files, val, cb) {
-    debug('ifExists helper', files, val);
-    if (utils.exists(files, app.cwd)) {
-      cb(null, val);
-    } else {
-      cb(null, '');
-    }
+    cb(null, utils.anyExists(files, this.app.cwd) ? val : '');
   });
 
   /**
@@ -154,19 +147,18 @@ module.exports = function plugin(app) {
    */
 
   app.asyncHelper('maybeInclude', function(name, helperName, cb) {
-    debug('maybeInclude helper', name);
     if (typeof helperName === 'function') {
       cb = helperName;
       helperName = 'include';
     }
 
-    var opts = utils.merge({}, this.options, this.context);
+    const opts = Object.assign({}, this.options, this.context);
     if (opts[name]) {
-      var fn = app.getAsyncHelper(helperName);
+      const fn = this.app.getAsyncHelper(helperName);
       return fn.apply(this, arguments);
-    } else {
-      cb(null, '');
     }
+
+    cb(null, '');
   });
 
   /**
@@ -174,28 +166,26 @@ module.exports = function plugin(app) {
    */
 
   app.asyncHelper('pkg', function fn(name, prop, cb) {
-    debug('pkg helper: %s, <%s>', name, prop);
     if (typeof prop === 'function') {
       cb = prop;
       prop = null;
     }
 
-    var key = name + ':' + String(prop);
-    if (fn[key]) {
-      cb(null, fn[key]);
+    if (fn[name]) {
+      cb(null, prop ? utils.get(fn[name], prop) : fn[name]);
       return;
     }
 
-    utils.getPkg(name, function(err, pkg) {
-      if (err) return cb(err);
-      var res = prop ? utils.get(pkg, prop) : pkg;
-      fn[key] = res;
-      cb(null, res);
-    });
+    utils.getPkg(name)
+      .then(pkg => {
+        const res = prop ? utils.get(pkg, prop) : pkg;
+        fn[name] = pkg;
+        cb(null, res);
+      })
+      .catch(cb);
   });
 
   app.asyncHelper('read', function(fp, cb) {
-    debug('read helper', fp);
     fs.readFile(fp, 'utf8', cb);
   });
 
@@ -204,32 +194,28 @@ module.exports = function plugin(app) {
    */
 
   app.helper('require', function(name) {
-    debug('require helper', name);
     try {
       return require(name);
-    } catch (err) {}
+    } catch (err) { /* do nothing */ }
     try {
       return require(path.resolve(name));
-    } catch (err) {}
+    } catch (err) { /* do nothing */ }
     return '';
   });
 
   // date helper
-  app.helper('date', function() {
-    debug('date helper');
-    return utils.date.apply(this, arguments);
+  app.helper('date', function(...args) {
+    return utils.date.call(this, ...args);
   });
 
-  app.helper('apidocs', function() {
-    debug('apidocs helper');
-    var fn = utils.apidocs(this.options);
-    return fn.apply(null, arguments);
+  app.helper('apidocs', function(...args) {
+    const fn = utils.apidocs(this.options);
+    return fn.call(null, ...args);
   });
 
-  app.helper('copyright', function() {
-    debug('copyright helper');
-    var fn = utils.copyright({linkify: true});
-    return fn.apply(this, arguments);
+  app.helper('copyright', function(...args) {
+    const fn = utils.copyright({ linkify: true });
+    return fn.call(this, ...args);
   });
 
   /**
@@ -237,17 +223,14 @@ module.exports = function plugin(app) {
    */
 
   app.helper('results', function(val) {
-    debug('results helper', val);
-    var fn = require(utils.resolve.sync(app.cwd));
-    var lines = util.inspect(fn(val)).split('\n');
-    return lines.map(function(line) {
-      return '//' + line;
-    }).join('\n');
+    const fn = require(require.resolve(this.app.cwd));
+    const lines = util.inspect(fn(val)).split('\n');
+    return lines.map(line => `//${line}`).join('\n');
   });
 
-  app.helper('previous', function(increment, v) {
-    var segs = String(v).split('.');
-    var version = '';
+  app.helper('previous', function(increment, val) {
+    const segs = String(val).split('.');
+    let version = '';
     switch (increment) {
       case 'major':
         version = (segs[0] - 1) + '.0.0';
@@ -261,6 +244,5 @@ module.exports = function plugin(app) {
     return version;
   });
 
-  debug('helpers finished');
   return plugin;
 };
