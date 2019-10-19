@@ -131,6 +131,8 @@ module.exports = function plugin(app) {
    */
 
   app.asyncHelper('ifExists', function(files, val, cb) {
+    val = typeof val === 'function' ? val() : val;
+    
     cb(null, utils.anyExists(files, this.app.cwd) ? val : '');
   });
 
